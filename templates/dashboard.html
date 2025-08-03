@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    <h1>Dashboard</h1>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div class="card" style="text-align: center;">
+            <p style="font-size: 2.5rem; font-weight: 700;">{{ doctors_count }}</p>
+            <p style="color: var(--text-secondary);">Registered Doctors</p>
+        </div>
+        <div class="card" style="text-align: center;">
+            <p style="font-size: 2.5rem; font-weight: 700;">{{ patients_count }}</p>
+            <p style="color: var(--text-secondary);">Total Patients</p>
+        </div>
+    </div>
+{% endblock %}

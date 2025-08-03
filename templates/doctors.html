@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Manage Doctors{% endblock %}
+{% block content %}
+<h1>Manage Doctors</h1>
+<div class="grid-layout">
+    <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Doctor List</h2>
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead><tr><th>Name</th><th>Specialization</th><th>Username</th></tr></thead>
+                <tbody>
+                    {% for doc in doctors %}
+                    <tr><td>{{ doc.name }}</td><td>{{ doc.specialization }}</td><td>{{ doc.username }}</td></tr>
+                    {% else %}
+                    <tr><td colspan="3">No doctors found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Add New Doctor</h2>
+        <form method="POST">
+            <div class="form-group"><label>Full Name</label><input type="text" name="name" class="form-control" required></div>
+            <div class="form-group"><label>Specialization</label><input type="text" name="specialization" class="form-control" required></div>
+            <div class="form-group"><label>Contact</label><input type="text" name="contact" class="form-control" required></div>
+            <hr style="margin: 1.5rem 0; border-color: var(--border-color);">
+            <div class="form-group"><label>Username</label><input type="text" name="username" class="form-control" required></div>
+            <div class="form-group"><label>Password</label><input type="password" name="password" class="form-control" required></div>
+            <button type="submit" class="btn" style="width: 100%;">Add Doctor</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Manage Staff{% endblock %}
+{% block content %}
+<h1>Manage Staff</h1>
+<div class="grid-layout">
+    <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Staff List</h2>
+        <table class="table">
+            <thead><tr><th>Username</th><th>Role</th></tr></thead>
+            <tbody>
+                {% for member in staff %}
+                <tr><td>{{ member.username }}</td><td>{{ member.role }}</td></tr>
+                {% else %}
+                <tr><td colspan="2">No staff found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Add New Staff</h2>
+        <form method="POST">
+            <div class="form-group"><label>Username</label><input type="text" name="username" class="form-control" required></div>
+            <div class="form-group"><label>Password</label><input type="password" name="password" class="form-control" required></div>
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role" class="form-control" required>
+                    <option value="Receptionist">Receptionist</option>
+                    <option value="Pharmacist">Pharmacist</option>
+                    <option value="Lab Tech">Lab Tech</option>
+                </select>
+            </div>
+            <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Add Staff</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

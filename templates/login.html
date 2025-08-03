@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-agpl-3.0">
+    <title>Admin Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --main-bg: #f3f4f6; --card-bg: #ffffff; --accent-blue: #3b82f6; --accent-blue-hover: #2563eb; --border-color: #e5e7eb; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--main-bg); display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .login-card { background-color: var(--card-bg); padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); width: 100%; max-width: 400px; }
+        .form-control { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; margin-top: 0.5rem; }
+        .btn { display: block; width: 100%; background-color: var(--accent-blue); color: white; padding: 0.75rem; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; margin-top: 1.5rem; text-decoration: none; text-align: center;}
+        .btn:hover { background-color: var(--accent-blue-hover); }
+        .flash.error { padding: 1rem; margin-bottom: 1rem; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c2c7; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2 style="text-align: center; font-weight: 600; font-size: 1.5rem; margin-bottom: 0.5rem;">HMS Admin Portal</h2>
+        <p style="text-align: center; color: #6b7280; margin-bottom: 2rem;">Please sign in to continue</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <form method="POST">
+            <div style="margin-bottom: 1rem;">
+                <label>Username</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div>
+                <label>Password</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+    </div>
+</body>
+</html>

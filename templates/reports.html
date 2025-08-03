@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Financial Reports{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Financial Reports</h1>
+    <a href="{{ url_for('download_report') }}" class="btn btn-success"><i class="fa-solid fa-download"></i> Download PDF</a>
+</div>
+
+<div class="card">
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Paid Bills History</h2>
+    <table class="table">
+        <thead><tr><th>Bill ID</th><th>Patient Name</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>
+            {% for bill in bills %}
+            <tr>
+                <td>{{ bill.id }}</td>
+                <td>{{ bill.name }}</td>
+                <td>${{ "%.2f"|format(bill.total_amount) }}</td>
+                <td>{{ bill.bill_date.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">No paid bills found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
