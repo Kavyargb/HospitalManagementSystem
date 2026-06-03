@@ -33,7 +33,7 @@ class App(tk.Tk):
         user = check_credentials(username, password)
         
         if user:
-            self.withdraw() # Hide the login window
+            self.withdraw()
             MainMenu(self, user)
         else:
             messagebox.showerror("Login Failed", "Invalid username or password.")
