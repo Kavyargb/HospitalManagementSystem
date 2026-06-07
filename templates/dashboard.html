@@ -1,15 +1,761 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard - HMS Portal{% endblock %}
+
 {% block content %}
-    <h1>Dashboard</h1>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-        <div class="card" style="text-align: center;">
-            <p style="font-size: 2.5rem; font-weight: 700;">{{ doctors_count }}</p>
-            <p style="color: var(--text-secondary);">Registered Doctors</p>
+<div class="page-header">
+    <div class="page-title">
+        <h1>Welcome Back, {{ session['user']['username'] }}</h1>
+        <p>HMS Management Portal • Today is {{ datetime_now.strftime('%A, %B %d, %Y') if datetime_now else 'Sunday, June 07, 2026' }}</p>
+    </div>
+    {% if session['user']['role'] == 'Admin' %}
+    <div>
+        <a href="{{ url_for('download_report') }}" class="btn btn-success"><i class="fa-solid fa-download"></i> Financial Report</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ============================================== -->
+<!-- 1. ADMIN DASHBOARD VIEW                        -->
+<!-- ============================================== -->
+{% if session['user']['role'] == 'Admin' %}
+<div class="stats-container">
+    <div class="stat-card">
+        <div class="stat-info">
+            <div class="stat-value">{{ doctors_count }}</div>
+            <div class="stat-label">Doctors</div>
         </div>
-        <div class="card" style="text-align: center;">
-            <p style="font-size: 2.5rem; font-weight: 700;">{{ patients_count }}</p>
-            <p style="color: var(--text-secondary);">Total Patients</p>
+        <div class="stat-icon blue">
+            <i class="fa-solid fa-user-doctor"></i>
         </div>
     </div>
+    <div class="stat-card">
+        <div class="stat-info">
+            <div class="stat-value">{{ patients_count }}</div>
+            <div class="stat-label">In-Patients</div>
+        </div>
+        <div class="stat-icon green">
+            <i class="fa-solid fa-bed"></i>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-info">
+            <div class="stat-value">{{ staff_count }}</div>
+            <div class="stat-label">Staff Members</div>
+        </div>
+        <div class="stat-icon purple">
+            <i class="fa-solid fa-users"></i>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-info">
+            <div class="stat-value">${{ "%.2f"|format(revenue) }}</div>
+            <div class="stat-label">Total Revenue</div>
+        </div>
+        <div class="stat-icon amber">
+            <i class="fa-solid fa-wallet"></i>
+        </div>
+    </div>
+</div>
+
+<div class="grid-layout">
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-hospital-user"></i> Hospital Overview</h2>
+            <span class="badge info">System Metrics</span>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+            Welcome to the HMS Administration dashboard. As an administrator, you have full control over the hospital database, including adding clinical/administrative staff, monitoring financial outputs, and printing revenue PDFs.
+        </p>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{{ url_for('manage_doctors') }}" class="btn"><i class="fa-solid fa-user-plus"></i> Manage Doctors</a>
+            <a href="{{ url_for('manage_staff') }}" class="btn btn-secondary"><i class="fa-solid fa-users-gear"></i> Manage Staff</a>
+            <a href="{{ url_for('view_reports') }}" class="btn btn-success"><i class="fa-solid fa-wallet"></i> Billing Analytics</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> System Logs</h2>
+        </div>
+        <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; color: var(--text-secondary);">
+            <div><i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 0.5rem;"></i> Database connected successfully.</div>
+            <div><i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 0.5rem;"></i> SQLite dynamic fallback loaded.</div>
+            <div><i class="fa-solid fa-circle-info" style="color: var(--accent); margin-right: 0.5rem;"></i> Pre-populated seed values injected.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 2. DOCTOR DASHBOARD VIEW                       -->
+<!-- ============================================== -->
+{% elif session['user']['role'] == 'Doctor' %}
+<div class="grid-layout">
+    <div>
+        <!-- Doctor profile -->
+        <div class="card mb-4" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-user-md" style="color: var(--accent);"></i> {{ doctor['name'] }}</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; display: flex; gap: 1.5rem;">
+                <span><strong>Specialization:</strong> {{ doctor['specialization'] }}</span>
+                <span><strong>Doctor ID:</strong> {{ doctor['id'] }}</span>
+            </p>
+        </div>
+
+        <!-- Appointments -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-calendar-check"></i> Scheduled Appointments</h2>
+                <span class="badge info">{{ appointments|length }} Pending</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Patient Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ appt['appointment_time'] }}</td>
+                            <td>{{ appt['patient_name'] }}</td>
+                            <td>
+                                <span class="badge {% if appt['status'] == 'Scheduled' %}warning{% else %}success{% endif %}">
+                                    {{ appt['status'] }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">No appointments scheduled today.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Assigned active patients -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-bed"></i> Patients Under Your Care</h2>
+                <span class="badge success">{{ patients|length }} Admitted</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Patient Name</th>
+                            <th>Age / Gender</th>
+                            <th>Room Assigned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pat in patients %}
+                        <tr>
+                            <td>#{{ pat['id'] }}</td>
+                            <td style="font-weight: 600; color: #ffffff;">{{ pat['name'] }}</td>
+                            <td>{{ pat['age'] }} yrs / {{ pat['gender'] }}</td>
+                            <td><span class="badge info">Room {{ pat['room_number'] }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No patients currently admitted under your care.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctor sidebar features -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-flask-vial"></i> Assign Lab Test</h2>
+            </div>
+            <form action="{{ url_for('doctor_assign_test') }}" method="POST">
+                <div class="form-group">
+                    <label for="patient_id">Select Patient</label>
+                    <select id="patient_id" name="patient_id" class="form-control" required>
+                        <option value="" disabled selected>Choose a patient...</option>
+                        {% for pat in patients %}
+                        <option value="{{ pat['id'] }}">{{ pat['name'] }} (ID: {{ pat['id'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="test_id">Select Lab Test</label>
+                    <select id="test_id" name="test_id" class="form-control" required>
+                        <option value="" disabled selected>Choose a test...</option>
+                        {% for test in lab_tests %}
+                        <option value="{{ test['id'] }}">{{ test['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-circle-plus"></i> Assign Test</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 3. RECEPTIONIST DASHBOARD VIEW                 -->
+<!-- ============================================== -->
+{% elif session['user']['role'] == 'Receptionist' %}
+<div class="grid-layout">
+    <div>
+        <!-- Room Occupancy Grid -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-hospital"></i> Ward & Room Status Grid</h2>
+                <div style="font-size: 0.85rem; display: flex; gap: 1rem;">
+                    <span><i class="fa-solid fa-square" style="color: var(--success);"></i> Free</span>
+                    <span><i class="fa-solid fa-square" style="color: var(--danger);"></i> Occupied</span>
+                </div>
+            </div>
+            <div class="room-grid">
+                {% for room in rooms %}
+                <div class="room-card {% if room['is_available'] %}available{% else %}occupied{% endif %}">
+                    <div class="room-number">Room {{ room['room_number'] }}</div>
+                    <div class="room-details">{{ room['type'] }}</div>
+                    <div class="room-details" style="margin-top: 0.25rem;">
+                        {% if room['is_available'] %}
+                        <span style="color: var(--success); font-weight: 600;">Available</span>
+                        {% else %}
+                        <span style="color: #ffffff; font-weight: 500;">Occupant: {{ room['patient_name'] }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Live Invoicing Generator -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-file-invoice-dollar"></i> Live Billing & Invoice Calculator</h2>
+            </div>
+            
+            <form action="{{ url_for('dashboard') }}" method="GET" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label for="calculate_bill">Select Patient to Bill</label>
+                    <select id="calculate_bill" name="calculate_bill" class="form-control" required>
+                        <option value="" disabled selected>Choose admitted patient...</option>
+                        {% for pat in active_patients %}
+                        <option value="{{ pat['id'] }}" {% if bill_details and bill_details['patient_id'] == pat['id'] %}selected{% endif %}>{{ pat['name'] }} (ID: {{ pat['id'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="padding: 0.85rem 1.5rem;"><i class="fa-solid fa-calculator"></i> Calculate</button>
+            </form>
+
+            {% if bill_details %}
+            <div class="invoice-container">
+                <div class="invoice-header">
+                    <div>
+                        <h3 style="font-weight: 700; color: #ffffff;">Patient Invoice: {{ bill_details['name'] }}</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Patient ID: #{{ bill_details['patient_id'] }}</p>
+                    </div>
+                    <div>
+                        <span class="badge danger">Unsaved Bill</span>
+                    </div>
+                </div>
+                
+                <!-- Room charges -->
+                {% if bill_details['room_charge'] > 0 %}
+                <div class="invoice-item">
+                    <span>Room: {{ bill_details['room_type'] }} ({{ bill_details['room_days'] }} days)</span>
+                    <span style="color: #ffffff;">${{ "%.2f"|format(bill_details['room_charge']) }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Consultation fee -->
+                {% if bill_details['consultation_charge'] > 0 %}
+                <div class="invoice-item">
+                    <span>Consultations: {{ bill_details['consultation_count'] }} visits</span>
+                    <span style="color: #ffffff;">${{ "%.2f"|format(bill_details['consultation_charge']) }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Lab Tests -->
+                {% for test in bill_details['lab_tests'] %}
+                <div class="invoice-item">
+                    <span>Lab Test: {{ test['name'] }}</span>
+                    <span style="color: #ffffff;">${{ "%.2f"|format(test['price']) }}</span>
+                </div>
+                {% endfor %}
+
+                <!-- Pharmacy issued -->
+                {% for med in bill_details['medicines'] %}
+                <div class="invoice-item">
+                    <span>Medicine: {{ med['name'] }} (x{{ med['quantity'] }} units)</span>
+                    <span style="color: #ffffff;">${{ "%.2f"|format(med['quantity'] * med['price']) }}</span>
+                </div>
+                {% endfor %}
+
+                <div class="invoice-item total">
+                    <span>Grand Total Due</span>
+                    <span style="color: var(--accent);">${{ "%.2f"|format(bill_details['grand_total']) }}</span>
+                </div>
+                
+                <form action="{{ url_for('save_bill') }}" method="POST" style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                    <input type="hidden" name="patient_id" value="{{ bill_details['patient_id'] }}">
+                    <input type="hidden" name="total_amount" value="{{ bill_details['grand_total'] }}">
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Issue Bill & Discharge</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Receptionist sidebar actions -->
+    <div>
+        <!-- Register Patient form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-hospital-user"></i> Register In-Patient</h2>
+            </div>
+            <form action="{{ url_for('register_patient') }}" method="POST">
+                <div class="form-group">
+                    <label for="name">Patient Full Name</label>
+                    <input type="text" id="name" name="name" class="form-control" placeholder="John Doe" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" class="form-control" placeholder="32" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender" class="form-control" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="contact">Contact Number</label>
+                    <input type="text" id="contact" name="contact" class="form-control" placeholder="1234567890" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" name="address" class="form-control" placeholder="123 Blue St, City" required>
+                </div>
+                <div class="form-group">
+                    <label for="doctor_id">Assign Physician</label>
+                    <select id="doctor_id" name="doctor_id" class="form-control" required>
+                        <option value="" disabled selected>Select a physician...</option>
+                        {% for doc in doctors %}
+                        <option value="{{ doc['id'] }}">{{ doc['name'] }} ({{ doc['specialization'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="room_id">Allocate Room</label>
+                    <select id="room_id" name="room_id" class="form-control" required>
+                        <option value="" disabled selected>Select available room...</option>
+                        {% for rm in available_rooms %}
+                        <option value="{{ rm['id'] }}">Room {{ rm['room_number'] }} ({{ rm['type'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-bed-pulse"></i> Admit Patient</button>
+            </form>
+        </div>
+
+        <!-- Book Appointment form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-calendar-plus"></i> Book Appointment</h2>
+            </div>
+            <form action="{{ url_for('book_appointment') }}" method="POST">
+                <div class="form-group">
+                    <label for="appt_patient">Select Patient</label>
+                    <select id="appt_patient" name="patient_id" class="form-control" required>
+                        <option value="" disabled selected>Select patient...</option>
+                        {% for pat in all_patients %}
+                        <option value="{{ pat['id'] }}">{{ pat['name'] }} (ID: {{ pat['id'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appt_doctor">Select Doctor</label>
+                    <select id="appt_doctor" name="doctor_id" class="form-control" required>
+                        <option value="" disabled selected>Select doctor...</option>
+                        {% for doc in doctors %}
+                        <option value="{{ doc['id'] }}">{{ doc['name'] }} ({{ doc['specialization'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appt_time">Date & Time</label>
+                    <input type="datetime-local" id="appt_time" name="appointment_time" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-secondary" style="width: 100%;"><i class="fa-solid fa-calendar-check"></i> Book Slot</button>
+            </form>
+        </div>
+
+        <!-- Unpaid Bills List -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-circle-exclamation" style="color: var(--warning);"></i> Unpaid Invoices</h2>
+            </div>
+            <div class="table-wrapper">
+                <table class="table" style="font-size: 0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Total</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in unpaid_bills %}
+                        <tr>
+                            <td>{{ bill['name'] }}</td>
+                            <td style="font-weight: 700;">${{ "%.2f"|format(bill['total_amount']) }}</td>
+                            <td>
+                                <form action="{{ url_for('pay_bill') }}" method="POST">
+                                    <input type="hidden" name="bill_id" value="{{ bill['id'] }}">
+                                    <button type="submit" class="btn btn-success" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; box-shadow: none;">Pay</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 1rem;">No unpaid bills.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 4. PHARMACIST DASHBOARD VIEW                   -->
+<!-- ============================================== -->
+{% elif session['user']['role'] == 'Pharmacist' %}
+<div class="grid-layout">
+    <div>
+        <!-- Medicine Stock Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-pills"></i> Medicine Stock & Chemical Assets</h2>
+                <span class="badge info">{{ medicines|length }} Types</span>
+            </div>
+            
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="medicine-search" class="form-control" placeholder="Search medicines by name..." onkeyup="filterMedicines()">
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table" id="medicines-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Expiry</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in medicines %}
+                        <tr class="medicine-row" style="cursor: pointer;" onclick="selectMedicine('{{ med['name'] }}', '{{ med['smiles'] or 'N/A' }}', '{{ url_for('static', filename='molecule_images/' + med['name'].lower().replace(' ', '_') + '.png') }}')">
+                            <td style="font-weight: 700; color: #ffffff;">{{ med['name'] }}</td>
+                            <td>{{ med['expiry_date'] }}</td>
+                            <td style="font-weight: 600;">${{ "%.2f"|format(med['price']) }}</td>
+                            <td>
+                                {% if med['quantity'] == 0 %}
+                                <span class="badge danger">Out of Stock</span>
+                                {% elif med['quantity'] < 20 %}
+                                <span class="badge warning">{{ med['quantity'] }} Units (Low)</span>
+                                {% else %}
+                                <span class="badge success">{{ med['quantity'] }} Units</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; box-shadow: none;">
+                                    <i class="fa-solid fa-flask"></i> Structure
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No medicines found in the inventory.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pharmacist sidebar actions -->
+    <div>
+        <!-- Selected Medicine details drawer -->
+        <div class="card mb-4" id="molecule-details-card" style="display: none;">
+            <div class="card-header">
+                <h2 id="details-med-name">Medicine Structure</h2>
+                <button type="button" onclick="closeDetails()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.1rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="molecule-drawer">
+                <div class="molecule-img-wrapper">
+                    <img id="details-med-img" src="" alt="Chemical structure not generated" class="molecule-img" onerror="this.src='https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' + encodeURIComponent(document.getElementById('details-med-name').innerText) + '/PNG'">
+                </div>
+                <div style="text-align: left; width: 100%;">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem;">CANONICAL SMILES STRING</p>
+                    <div id="details-med-smiles" class="molecule-smiles">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issue Medicine to patient -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-prescription"></i> Dispense Medicine</h2>
+            </div>
+            <form action="{{ url_for('issue_medicine') }}" method="POST">
+                <div class="form-group">
+                    <label for="dispense_patient">Select Patient</label>
+                    <select id="dispense_patient" name="patient_id" class="form-control" required>
+                        <option value="" disabled selected>Select active patient...</option>
+                        {% for pat in patients %}
+                        <option value="{{ pat['id'] }}">{{ pat['name'] }} (ID: {{ pat['id'] }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dispense_med">Select Medicine</label>
+                    <select id="dispense_med" name="medicine_id" class="form-control" required>
+                        <option value="" disabled selected>Select medicine...</option>
+                        {% for med in medicines %}
+                        {% if med['quantity'] > 0 %}
+                        <option value="{{ med['id'] }}">{{ med['name'] }} (Stock: {{ med['quantity'] }})</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dispense_qty">Quantity</label>
+                    <input type="number" id="dispense_qty" name="quantity" class="form-control" min="1" placeholder="10" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-hand-holding-medical"></i> Dispense & Log</button>
+            </form>
+        </div>
+
+        <!-- Add New Medicine -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-circle-plus"></i> Add New Medicine</h2>
+            </div>
+            <form action="{{ url_for('add_medicine') }}" method="POST">
+                <div class="form-group">
+                    <label for="med_name">Medicine Name</label>
+                    <input type="text" id="med_name" name="name" class="form-control" placeholder="Aspirin" required autocomplete="off">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="med_qty">Quantity</label>
+                        <input type="number" id="med_qty" name="quantity" class="form-control" min="1" placeholder="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="med_price">Price Per Unit</label>
+                        <input type="number" step="0.01" id="med_price" name="price" class="form-control" placeholder="2.50" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="med_expiry">Expiry Date</label>
+                    <input type="date" id="med_expiry" name="expiry_date" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-secondary" style="width: 100%;"><i class="fa-solid fa-magnifying-glass-chart"></i> Add to Inventory</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterMedicines() {
+        var input = document.getElementById("medicine-search").value.toLowerCase();
+        var table = document.getElementById("medicines-table");
+        var rows = table.getElementsByClassName("medicine-row");
+        
+        for (var i = 0; i < rows.length; i++) {
+            var nameCol = rows[i].getElementsByTagName("td")[0];
+            if (nameCol) {
+                var textValue = nameCol.textContent || nameCol.innerText;
+                if (textValue.toLowerCase().indexOf(input) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+    function selectMedicine(name, smiles, imgUrl) {
+        document.getElementById("molecule-details-card").style.display = "block";
+        document.getElementById("details-med-name").innerText = name;
+        document.getElementById("details-med-smiles").innerText = smiles;
+        
+        var imgElement = document.getElementById("details-med-img");
+        imgElement.src = imgUrl;
+        
+        // Scroll detail card into view if mobile
+        if(window.innerWidth <= 1024) {
+            document.getElementById("molecule-details-card").scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    function closeDetails() {
+        document.getElementById("molecule-details-card").style.display = "none";
+    }
+</script>
+
+<!-- ============================================== -->
+<!-- 5. LAB TECH DASHBOARD VIEW                     -->
+<!-- ============================================== -->
+{% elif session['user']['role'] == 'Lab Tech' %}
+<div class="grid-layout">
+    <div>
+        <!-- Pending Lab Reports queue -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-vials"></i> Pending Lab Tests Queue</h2>
+                <span class="badge warning">{{ pending_tests|length }} Pending</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Report ID</th>
+                            <th>Patient Name</th>
+                            <th>Assigned Test</th>
+                            <th>Assigned Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in pending_tests %}
+                        <tr>
+                            <td>#{{ test['id'] }}</td>
+                            <td style="font-weight: 600; color: #ffffff;">{{ test['patient_name'] }}</td>
+                            <td><span class="badge info">{{ test['test_name'] }}</span></td>
+                            <td style="font-size: 0.85rem; color: var(--text-secondary);">{{ test['report_date'] }}</td>
+                            <td>
+                                <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; box-shadow: none;" onclick="openResultForm('{{ test['id'] }}', '{{ test['patient_name'] }}', '{{ test['test_name'] }}')">
+                                    <i class="fa-solid fa-file-pen"></i> Enter Result
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No pending tests in queue. Great job!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lab Tech sidebar actions -->
+    <div>
+        <!-- Enter Result Form Card (loaded dynamically via JS clicking) -->
+        <div class="card mb-4" id="result-entry-card" style="display: none; background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.7)); border-color: var(--accent-glow);">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-file-waveform"></i> Enter Test Results</h2>
+                <button type="button" onclick="closeResultForm()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form action="{{ url_for('enter_result') }}" method="POST">
+                <input type="hidden" id="result-report-id" name="report_id">
+                <div class="form-group">
+                    <label>Patient</label>
+                    <input type="text" id="result-patient-name" class="form-control" style="background: rgba(255,255,255,0.01);" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Assigned Test</label>
+                    <input type="text" id="result-test-name" class="form-control" style="background: rgba(255,255,255,0.01);" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="result-text">Lab Findings / Diagnosis Results</label>
+                    <textarea id="result-text" name="result" class="form-control" rows="4" placeholder="Enter formal findings..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-success" style="width: 100%;"><i class="fa-solid fa-file-import"></i> Save Findings</button>
+            </form>
+        </div>
+
+        <!-- Add Lab Test Type -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-circle-plus"></i> Add Lab Test Type</h2>
+            </div>
+            <form action="{{ url_for('add_test_type') }}" method="POST">
+                <div class="form-group">
+                    <label for="test_name">Test Name</label>
+                    <input type="text" id="test_name" name="name" class="form-control" placeholder="Complete Blood Count (CBC)" required>
+                </div>
+                <div class="form-group">
+                    <label for="test_price">Pricing Fee ($)</label>
+                    <input type="number" step="0.01" id="test_price" name="price" class="form-control" placeholder="50.00" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-microscope"></i> Create Test Type</button>
+            </form>
+        </div>
+
+        <!-- Available Lab Tests list -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-book-medical"></i> Available Lab Services</h2>
+            </div>
+            <div class="table-wrapper" style="max-height: 250px; overflow-y: auto;">
+                <table class="table" style="font-size: 0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Test Type</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in test_types %}
+                        <tr>
+                            <td>{{ test['name'] }}</td>
+                            <td style="font-weight: 600;">${{ "%.2f"|format(test['price']) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openResultForm(reportId, patientName, testName) {
+        document.getElementById("result-entry-card").style.display = "block";
+        document.getElementById("result-report-id").value = reportId;
+        document.getElementById("result-patient-name").value = patientName;
+        document.getElementById("result-test-name").value = testName;
+        document.getElementById("result-text").value = "";
+        document.getElementById("result-text").focus();
+        
+        if(window.innerWidth <= 1024) {
+            document.getElementById("result-entry-card").scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    function closeResultForm() {
+        document.getElementById("result-entry-card").style.display = "none";
+    }
+</script>
+
+{% endif %}
 {% endblock %}

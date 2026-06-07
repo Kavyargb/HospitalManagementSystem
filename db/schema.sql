@@ -96,4 +96,4 @@ CREATE TABLE `bills` (
   FOREIGN KEY (`patient_id`) REFERENCES `patients`(`id`)
 );
 
-INSERT INTO `users` (`username`, `password_hash`, `role`) VALUES ('admin', '$2b$12$EixZa9d3CmmLd38Jyl32feH9zNq2qX6Z1t2t3t4t5t6t7t8t9t0uO', 'Admin');
+INSERT INTO `users` (`username`, `password_hash`, `role`) VALUES ('admin', '$2b$12$j9webUJQ5jmt5h5US4hUeeavTUsy8WfNlLGcFdt9s0QyPNWmQ63Ja', 'Admin');

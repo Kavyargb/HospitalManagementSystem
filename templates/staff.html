@@ -1,35 +1,72 @@
 {% extends "base.html" %}
-{% block title %}Manage Staff{% endblock %}
+{% block title %}Manage Staff - HMS Portal{% endblock %}
+
 {% block content %}
-<h1>Manage Staff</h1>
+<div class="page-header">
+    <div class="page-title">
+        <h1>Staff Management</h1>
+        <p>Manage administrative, pharmacy, and laboratory personnel accounts</p>
+    </div>
+</div>
+
 <div class="grid-layout">
     <div class="card">
-        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Staff List</h2>
-        <table class="table">
-            <thead><tr><th>Username</th><th>Role</th></tr></thead>
-            <tbody>
-                {% for member in staff %}
-                <tr><td>{{ member.username }}</td><td>{{ member.role }}</td></tr>
-                {% else %}
-                <tr><td colspan="2">No staff found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="card-header">
+            <h2><i class="fa-solid fa-users-gear"></i> Staff Directory</h2>
+            <span class="badge info">{{ staff|length }} Accounts</span>
+        </div>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Username</th>
+                        <th>Role Assigned</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in staff %}
+                    <tr>
+                        <td style="font-weight: 700;">#{{ member.id }}</td>
+                        <td style="font-weight: 600; color: #ffffff;">{{ member.username }}</td>
+                        <td>
+                            <span class="badge {% if member.role == 'Receptionist' %}info{% elif member.role == 'Pharmacist' %}warning{% else %}success{% endif %}">
+                                {{ member.role }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">No staff members found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+    
     <div class="card">
-        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Add New Staff</h2>
+        <div class="card-header">
+            <h2><i class="fa-solid fa-user-plus"></i> Create Staff Account</h2>
+        </div>
         <form method="POST">
-            <div class="form-group"><label>Username</label><input type="text" name="username" class="form-control" required></div>
-            <div class="form-group"><label>Password</label><input type="password" name="password" class="form-control" required></div>
             <div class="form-group">
-                <label>Role</label>
-                <select name="role" class="form-control" required>
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="staff.name" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="role">Role Permission</label>
+                <select id="role" name="role" class="form-control" required>
                     <option value="Receptionist">Receptionist</option>
                     <option value="Pharmacist">Pharmacist</option>
                     <option value="Lab Tech">Lab Tech</option>
                 </select>
             </div>
-            <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Add Staff</button>
+            <button type="submit" class="btn" style="width: 100%;"><i class="fa-solid fa-circle-plus"></i> Create User Account</button>
         </form>
     </div>
 </div>

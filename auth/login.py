@@ -26,7 +26,7 @@ def login():
 
     # Fetch user from the database
     query = "SELECT id, username, password_hash, role FROM users WHERE username = %s"
-    user = execute_query(query, (username,), fetch='one')
+    user = execute_query(query, (username.lower().strip() if username else "",), fetch='one')
 
     if user and check_password(password, user['password_hash']):
         print(f"\nWelcome, {user['username']}! (Role: {user['role']})")
@@ -42,16 +42,18 @@ def create_user(username, password, role):
     valid_roles = ['Admin', 'Doctor', 'Receptionist', 'Pharmacist', 'Lab Tech']
     if role not in valid_roles:
         print(f"Error: Invalid role '{role}'. Must be one of {valid_roles}")
-        return
+        return None
 
     password_hash = hash_password(password)
     query = "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)"
     try:
-        user_id = execute_query(query, (username, password_hash, role))
+        user_id = execute_query(query, (username.lower().strip() if username else "", password_hash, role))
         print(f"User '{username}' created successfully with ID: {user_id}")
+        return user_id
     except Exception as e:
         # This will catch unique constraint violations for username
         print(f"Error creating user '{username}': {e}")
+        return None
 
 
 def check_credentials(username, password):
@@ -61,7 +63,7 @@ def check_credentials(username, password):
     Returns user dictionary on success, None on failure.
     """
     query = "SELECT id, username, password_hash, role FROM users WHERE username = %s"
-    user = execute_query(query, (username,), fetch='one')
+    user = execute_query(query, (username.lower().strip() if username else "",), fetch='one')
 
     if user and check_password(password, user['password_hash']):
         return user

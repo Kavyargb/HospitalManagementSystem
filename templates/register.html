@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - MedFlow AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+</head>
+<body class="login-body">
+    <div class="login-card" style="max-width: 500px; margin: 2rem 0;">
+        <div class="login-logo" style="margin-bottom: 2rem;">
+            <i class="fa-solid fa-house-medical"></i>
+            <h2>Create Account</h2>
+            <p>Join the MedFlow SaaS Platform</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}" style="margin-bottom: 1.5rem;">
+                  {% if category == 'success' %}
+                      <i class="fa-solid fa-circle-check"></i>
+                  {% else %}
+                      <i class="fa-solid fa-circle-exclamation"></i>
+                  {% endif %}
+                  <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <!-- Username -->
+            <div class="form-group">
+                <label for="username"><i class="fa-solid fa-user mr-2"></i> Username</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Choose a username" required autocomplete="off">
+            </div>
+
+            <!-- Role Select -->
+            <div class="form-group">
+                <label for="role"><i class="fa-solid fa-id-card-clip mr-2"></i> Account Role</label>
+                <select id="role" name="role" class="form-control register-role-select" required onchange="toggleDoctorFields(this.value)">
+                    <option value="" disabled selected>Select your system role</option>
+                    <option value="Admin">Admin (Hospital Manager)</option>
+                    <option value="Doctor">Doctor (Clinical Practitioner)</option>
+                    <option value="Receptionist">Receptionist (Front Desk)</option>
+                    <option value="Pharmacist">Pharmacist (Apothecary)</option>
+                    <option value="Lab Tech">Lab Tech (Diagnostics)</option>
+                </select>
+            </div>
+
+            <!-- Doctor Specific Profile Fields Container -->
+            <div id="doctor-fields" class="doctor-fields-container">
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; color: var(--accent);">
+                    <i class="fa-solid fa-user-doctor mr-2"></i> Doctor Profile Information
+                </h4>
+                
+                <div class="form-group">
+                    <label for="doctor_name">Full Name (including Dr. title)</label>
+                    <input type="text" id="doctor_name" name="doctor_name" class="form-control" placeholder="e.g. Dr. John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="specialization">Specialization / Department</label>
+                    <input type="text" id="specialization" name="specialization" class="form-control" placeholder="e.g. Cardiology, Neurology">
+                </div>
+                
+                <div class="form-group">
+                    <label for="contact">Contact Number</label>
+                    <input type="text" id="contact" name="contact" class="form-control" placeholder="e.g. 555-0100">
+                </div>
+            </div>
+            
+            <!-- Password -->
+            <div class="form-group">
+                <label for="password"><i class="fa-solid fa-lock mr-2"></i> Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Create a strong password" required>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="confirm_password"><i class="fa-solid fa-circle-check mr-2"></i> Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Repeat your password" required>
+            </div>
+            
+            <button type="submit" class="btn" style="width: 100%; padding: 1rem;">
+                <span>Register Account</span> <i class="fa-solid fa-user-plus"></i>
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                Already have an account? 
+                <a href="{{ url_for('login') }}" style="color: var(--accent); text-decoration: none; font-weight: 600;">Sign In here</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Script to toggle doctor specific fields -->
+    <script>
+        function toggleDoctorFields(role) {
+            const container = document.getElementById('doctor-fields');
+            const doctorNameInput = document.getElementById('doctor_name');
+            
+            if (role === 'Doctor') {
+                container.classList.add('show');
+                doctorNameInput.setAttribute('required', 'required');
+            } else {
+                container.classList.remove('show');
+                doctorNameInput.removeAttribute('required');
+            }
+        }
+    </script>
+</body>
+</html>

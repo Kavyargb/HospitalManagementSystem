@@ -1,27 +1,49 @@
 {% extends "base.html" %}
-{% block title %}Financial Reports{% endblock %}
+{% block title %}Financial Reports - HMS Portal{% endblock %}
+
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Financial Reports</h1>
-    <a href="{{ url_for('download_report') }}" class="btn btn-success"><i class="fa-solid fa-download"></i> Download PDF</a>
+<div class="page-header">
+    <div class="page-title">
+        <h1>Financial Reports</h1>
+        <p>Monitor patient billing histories, invoice listings, and print revenue reports</p>
+    </div>
+    <div>
+        <a href="{{ url_for('download_report') }}" class="btn btn-success"><i class="fa-solid fa-download"></i> Export PDF Report</a>
+    </div>
 </div>
 
 <div class="card">
-    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Paid Bills History</h2>
-    <table class="table">
-        <thead><tr><th>Bill ID</th><th>Patient Name</th><th>Amount</th><th>Date</th></tr></thead>
-        <tbody>
-            {% for bill in bills %}
-            <tr>
-                <td>{{ bill.id }}</td>
-                <td>{{ bill.name }}</td>
-                <td>${{ "%.2f"|format(bill.total_amount) }}</td>
-                <td>{{ bill.bill_date.strftime('%Y-%m-%d') }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4">No paid bills found.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="card-header">
+        <h2><i class="fa-solid fa-receipt"></i> Paid Invoices History</h2>
+        <span class="badge success">Settled Accounts</span>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Invoice ID</th>
+                    <th>Patient Name</th>
+                    <th>Settled Date</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Amount Settled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bill in bills %}
+                <tr>
+                    <td style="font-weight: 700;">#{{ bill.id }}</td>
+                    <td style="font-weight: 600; color: #ffffff;">{{ bill.name }}</td>
+                    <td>{{ bill.bill_date.strftime('%Y-%m-%d %H:%M') if hasattr(bill.bill_date, 'strftime') else bill.bill_date }}</td>
+                    <td><span class="badge success">Paid</span></td>
+                    <td style="text-align: right; font-weight: 700; color: var(--success);">${{ "%.2f"|format(bill.total_amount) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No paid invoices found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}
